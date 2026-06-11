@@ -1,0 +1,24 @@
+{
+  "name": "খেলা দেখুন - লাইভ স্পোর্টস ও আইপিটিভি",
+  "short_name": "খেলা দেখুন",
+  "description": "একটি আধুনিক ও সুন্দর আইপিটিভি প্লেয়ার এবং লাইভ স্পোর্টস ট্র্যাকার অ্যাপ যেখানে যেকোনো দেশের চ্যানেল বা স্পোর্টস লাইভ দেখা যাবে।",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#020617",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=192&auto=format&fit=crop&q=80",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=512&auto=format&fit=crop&q=80",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
