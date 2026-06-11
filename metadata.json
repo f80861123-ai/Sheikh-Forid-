@@ -1,0 +1,6 @@
+{
+  "name": "খেলা দেখুন - Khela Dekhun",
+  "description": "একটি আধুনিক ও সুন্দর আইপিটিভি প্লেয়ার এবং লাইভ স্পোর্টস ট্র্যাকার অ্যাপ যেখানে যেকোনো দেশের চ্যানেল বা স্পোর্টস লাইভ দেখা যাবে।",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
