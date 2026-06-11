@@ -71,6 +71,53 @@ export default function App() {
   // Help Modal
   const [showHelp, setShowHelp] = useState(false);
 
+  // APK generation help modal
+  const [showApkModal, setShowApkModal] = useState(false);
+
+  // PWA & Mobile Installation States
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(false);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setIsInstalled(true);
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsInstalled(true);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) {
+      alert('আপনার ব্রাউজারে ইনস্টলেশন সরাসরি সমর্থিত নয় বা ইতোমধ্যে ইনস্টল হয়েছে। ৩ ডট মেনু থেকে "Add to Home screen" নির্বাচন করুন।');
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`PWA user response: ${outcome}`);
+    setDeferredPrompt(null);
+    setIsInstallable(false);
+  };
+
   // Load custom channels and favorites from localStorage on mount
   useEffect(() => {
     const savedCustom = localStorage.getItem('khela_dekhun_custom_streams');
@@ -295,16 +342,34 @@ export default function App() {
         </div>
 
         {/* Action Widgets */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap justify-end">
           {/* Status badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300">
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-1 bg-slate-900 border border-slate-800 rounded-lg text-xs text-slate-300">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
             <span>প্লেয়ার রেডি</span>
           </div>
+
+          <button
+            onClick={() => setShowApkModal(true)}
+            className="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white text-[11px] md:text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 duration-100"
+          >
+            <span className="text-sm">🤖</span>
+            <span>APK তৈরি করুন</span>
+          </button>
+
+          {isInstallable && (
+            <button
+              onClick={handleInstallPWA}
+              className="px-3 py-1.5 bg-rose-600 hover:bg-rose-500 text-white text-[11px] md:text-xs font-bold rounded-lg transition-all flex items-center gap-1.5 cursor-pointer shadow-md active:scale-95 duration-100"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>মোবাইলে ইন্সটল</span>
+            </button>
+          )}
           
           <button
             onClick={() => setShowHelp(true)}
-            className="p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg border border-transparent hover:border-slate-800 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+            className="p-1.5 md:p-2 text-slate-400 hover:text-white hover:bg-slate-900 rounded-lg border border-transparent hover:border-slate-800 transition-all cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
           >
             <HelpCircle className="w-4.5 h-4.5" />
             <span className="hidden md:inline">ব্যবহার নির্দেশিকা</span>
@@ -717,40 +782,38 @@ export default function App() {
                           category: channel.category
                         });
                       }}
-                      className={`flex items-center justify-between p-3.5 cursor-pointer text-left transition-all ${
-                        isActive
-                          ? 'bg-rose-500/10 border-l-4 border-l-rose-500'
-                          : 'hover:bg-slate-900/40 border-l-4 border-l-transparent'
+                      className={`flex items-center justify-between p-3.5 transition-all hover:bg-slate-900/40 cursor-pointer ${
+                        isActive 
+                          ? 'bg-rose-500/10 border-l-4 border-rose-500 pl-2.5' 
+                          : 'border-l-4 border-transparent'
                       }`}
                     >
-                      <div className="flex items-center gap-3.5 min-w-0">
-                        {/* Channel Logo */}
+                      <div className="flex items-center gap-3 overflow-hidden">
                         {channel.logo ? (
-                          <img
-                            src={channel.logo}
+                          <img 
+                            src={channel.logo} 
                             alt={channel.name}
                             referrerPolicy="no-referrer"
-                            className="w-10 h-10 object-contain rounded-lg bg-slate-950 border border-slate-900 p-0.5 shrink-0"
+                            className="w-9 h-9 object-contain rounded-lg bg-slate-950 border border-slate-800 p-0.5 shrink-0"
                             onError={(e) => {
-                              // Replace broken logos with a letter placeholder
                               const target = e.target as HTMLImageElement;
                               target.style.display = 'none';
                             }}
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-slate-950 border border-slate-900/40 text-slate-400 font-bold text-sm shrink-0 flex items-center justify-center uppercase">
-                            {channel.name[0] || 'CH'}
+                          <div className="w-9 h-9 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 font-bold text-[10px] text-rose-400">
+                            {channel.name ? channel.name[0] : 'TV'}
                           </div>
                         )}
-
-                        {/* Title and metadata */}
-                        <div className="min-w-0">
-                          <h4 className={`text-xs font-bold leading-snug line-clamp-1 ${isActive ? 'text-rose-400' : 'text-slate-300 group-hover:text-white'}`}>
+                        <div className="overflow-hidden">
+                          <h5 className={`text-xs font-bold truncate ${isActive ? 'text-rose-400' : 'text-slate-200'}`}>
                             {channel.name}
-                          </h4>
-                          <span className="text-[10px] text-slate-500 font-medium font-mono mt-0.5 inline-block truncate max-w-[150px]">
-                            {channel.category || 'General'}
-                          </span>
+                          </h5>
+                          {channel.category && (
+                            <span className="text-[9px] text-slate-500 font-medium block mt-0.5 truncate">
+                              {channel.category}
+                            </span>
+                          )}
                         </div>
                       </div>
 
@@ -886,6 +949,104 @@ export default function App() {
                 className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer"
               >
                 বুঝতে পেরেছি
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* APK Generation Step-by-Step Interactive Guide */}
+      {showApkModal && (
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 shadow-2.5xl relative overflow-hidden flex flex-col gap-4">
+            
+            <div className="absolute top-0 left-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none"></div>
+
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🤖</span>
+                <h3 className="text-base font-bold text-white font-bengali">অ্যান্ড্রয়েড অ্যাপ (APK) ফাইলে রূপান্তর গাইড</h3>
+              </div>
+              <button
+                onClick={() => setShowApkModal(false)}
+                className="p-1.5 bg-slate-950 hover:bg-slate-800/80 hover:text-white text-slate-400 rounded-lg border border-slate-850 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="text-xs text-slate-300 space-y-4 max-h-[430px] overflow-y-auto pr-1 leading-relaxed">
+              <p className="text-slate-400 bg-slate-950/80 p-3 rounded-xl border border-slate-850">
+                এই চমৎকার লাইভ টিভি প্লেয়ারটিকে আপনি খুব সহজেই নিচের ৩টি উপায়ে আপনার অ্যান্ড্রয়েড ফোনের জন্য <strong>.apk</strong> অ্যাপ বানিয়ে ডিরেক্ট ইনস্টল করতে পারেন:
+              </p>
+
+              {/* Way 1: PWA Add to Home Screen */}
+              <div className="bg-slate-950/40 border border-slate-850 p-4 rounded-xl space-y-2">
+                <h4 className="font-bold text-rose-400 flex items-center gap-1.5">
+                  <span className="bg-rose-500/15 text-rose-400 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded">পদ্ধতি ১</span>
+                  পোর্টেবল PWA ইনস্টলার (সবচেয়ে রিকমেন্ডেড ও ইনস্ট্যান্ট)
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  আমাদের সাইটে অলরেডি <strong>Progressive Web App (PWA)</strong> ও <strong>manifest.json</strong> সেটআপ করা আছে।
+                </p>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400 pl-2">
+                  <li>আপনার ফোনের <strong>Chrome</strong> ব্রাউজারে সাইটটি ওপেন করুন।</li>
+                  <li>ব্রাউজারের ৩-ডট মেনুতে ক্লিক করুন এবং <strong className="text-slate-200">"Install app"</strong> অথবা <strong className="text-slate-200">"Add to Home screen"</strong> চাপুন।</li>
+                  <li>এটি ফোনের ডেক্সটপ বা হোমস্ক্রিনে একদম Native APK অ্যাপের মত লোগোসহ ইনস্টল হয়ে যাবে এবং কোনো ইন্টারনেট এড্রেস বার দেখাবে না!</li>
+                </ul>
+              </div>
+
+              {/* Way 2: Free Online APK Generator */}
+              <div className="bg-slate-950/40 border border-slate-850 p-4 rounded-xl space-y-2">
+                <h4 className="font-bold text-emerald-400 flex items-center gap-1.5">
+                  <span className="bg-emerald-500/15 text-emerald-400 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded">পদ্ধতি ২</span>
+                  অনলাইন কনভার্টার (৩ সেকেন্ডে ফ্রি APK ডাউনলোড)
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  আপনি নিচের এই লাইভ লিংকটি ব্যবহার করে ফ্রিতে ইনস্ট্যান্ট APK ডাউনলোড করে নিতে পারেন:
+                </p>
+                <div className="bg-slate-950 border border-slate-850 p-2.5 rounded-lg text-rose-400 font-mono text-[10.5px] break-all select-all">
+                  https://ais-pre-nwxrw5dijb47cenqqtxdsw-960245945164.asia-southeast1.run.app
+                </div>
+                <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-400 pl-2">
+                  <li><a href="https://www.webintoapp.com/" target="_blank" rel="noreferrer" className="text-sky-400 underline hover:text-sky-300">WebIntoApp.com</a> অথবা <a href="https://www.appcreator24.com/" target="_blank" rel="noreferrer" className="text-sky-400 underline hover:text-sky-300">AppCreator24</a> ওয়েবসাইটে প্রবেশ করুন।</li>
+                  <li>সেখানে উপরের লাইভ URL লিংকটি পেস্ট করুন এবং অ্যাপের নাম <strong className="text-slate-200">"খেলা দেখুন"</strong> দিন।</li>
+                  <li>"Generate APK" বাটনে ক্লিক করলেই আপনার জন্য সরাসরি ডিরেক্ট অ্যান্ড্রয়েড <strong>.apk</strong> ফাইল ডাউনলোড লিংক রেডি হয়ে যাবে!</li>
+                </ul>
+              </div>
+
+              {/* Way 3: Developer Command-line Build wrapper */}
+              <div className="bg-slate-950/40 border border-slate-850 p-4 rounded-xl space-y-2">
+                <h4 className="font-bold text-indigo-400 flex items-center gap-1.5">
+                  <span className="bg-indigo-500/15 text-indigo-400 text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded">পদ্ধতি ৩</span>
+                  ক্যাপাসিটর কোডিং (CapacitorJS) দিয়ে নিজের APK
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  আপনি যদি প্রফেশনাল অ্যান্ড্রয়েড স্টুডিও কোডিং করতে চান, তবে টার্মিনালে রান করুন:
+                </p>
+                <pre className="bg-slate-950 border border-slate-850 p-3 rounded-lg font-mono text-[10px] text-teal-400 overflow-x-auto space-y-1">
+                  <div># Capacitor ইনস্টল করুন</div>
+                  <div>npm install @capacitor/core @capacitor/cli</div>
+                  <div>npx cap init "খেলা দেখুন" "com.kheladekhun.app" --web-dir=dist</div>
+                  <div>npm run build</div>
+                  <div>npx cap add android</div>
+                  <div>npx cap open android</div>
+                </pre>
+                <p className="text-[10px] text-slate-400">
+                  এটি রান করলে সরাসরি অ্যান্ড্রয়েড স্টুডিও ওপেন হবে, যেখান থেকে আপনি <strong>Build &gt; Build Bundle(s) / APK(s) &gt; Build APK</strong> সিলেক্ট করে এক ক্লিকেই APK বিল্ড করে নিতে পারেন!
+                </p>
+              </div>
+
+            </div>
+
+            <div className="border-t border-slate-800 pt-3 flex justify-between items-center">
+              <span className="text-[10px] text-slate-500 font-mono">খেলা দেখুন IPTV App Packager</span>
+              <button
+                onClick={() => setShowApkModal(false)}
+                className="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-all cursor-pointer active:scale-95 duration-100"
+              >
+                ঠিক আছে, বুঝেছি!
               </button>
             </div>
 
